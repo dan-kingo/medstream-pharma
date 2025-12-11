@@ -1,5 +1,5 @@
 import  { useState } from 'react'
-import { Search, Eye, Check, X, Clock, MapPin, Phone, User, Truck } from 'lucide-react'
+import { Search, Eye, Check, X, Clock, MapPin, Phone, User, Truck, FileText, ExternalLink } from 'lucide-react'
 import { useApi, useApiMutation } from '../hooks/useApi'
 import TrackingMap from '../components/TrackingMap'
 
@@ -62,6 +62,11 @@ const Orders: React.FC = () => {
       case 'cancelled': return X
       default: return Clock
     }
+  }
+
+  const resolvePrescriptionUrl = (url?: string) => {
+    if (!url) return ''
+    return url.startsWith('http') ? url : `https://api-medimap.onrender.com${url}`
   }
 
   const filteredOrders = orders.filter(order => {
@@ -210,6 +215,21 @@ const Orders: React.FC = () => {
                           <span className="font-medium text-gray-700">Delivery Address:</span>
                           <span className="ml-2 text-gray-600">{order.address}</span>
                         </p>
+                      </div>
+                    )}
+
+                    {order.prescriptionUrl && (
+                      <div className="flex items-center gap-2 text-sm text-gray-700 mb-2">
+                        <FileText className="h-4 w-4 text-primary-600" />
+                        <a
+                          href={resolvePrescriptionUrl(order.prescriptionUrl)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-primary-600 hover:text-primary-700 font-medium inline-flex items-center gap-1"
+                        >
+                          View prescription
+                          <ExternalLink className="h-3 w-3" />
+                        </a>
                       </div>
                     )}
                   </div>
@@ -417,16 +437,31 @@ const Orders: React.FC = () => {
                 </div>
 
                 {selectedOrder.prescriptionUrl && (
-                  <div>
+                  <div className="space-y-2">
                     <h4 className="font-medium text-gray-700 mb-2">Prescription</h4>
-                    <a 
-                      href={`https://api-medimap.onrender.com${selectedOrder.prescriptionUrl}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-primary-600 hover:text-primary-700 underline"
-                    >
-                      View Prescription
-                    </a>
+                    <div className="flex items-start gap-3">
+                      <div className="relative rounded-lg border border-gray-200 overflow-hidden bg-gray-50">
+                        <img
+                          src={resolvePrescriptionUrl(selectedOrder.prescriptionUrl)}
+                          alt="Prescription"
+                          className="h-32 w-32 object-cover"
+                        />
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        <a
+                          href={resolvePrescriptionUrl(selectedOrder.prescriptionUrl)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="btn-secondary inline-flex items-center w-max"
+                        >
+                          <Eye className="h-4 w-4 mr-2" />
+                          Open full image
+                        </a>
+                        <p className="text-xs text-gray-500">
+                          Click to view or download the uploaded prescription.
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
