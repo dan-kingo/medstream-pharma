@@ -87,18 +87,13 @@ export const profileAPI = {
 export const medicineAPI = {
   getMedicines: () => api.get('/medicines'),
   
-  addMedicine: (data: {
-    name: string
-    strength?: string
-    unit?: string
-    type: 'Tablet' | 'Syrup' | 'Injection'
-    description?: string
-    requiresPrescription?: boolean
-    price: number
-    quantity: number
-  }) => api.post('/medicines', data),
+  addMedicine: (data: FormData) => api.post('/medicines', data, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  }),
   
-  updateMedicine: (id: string, data: any) => api.put(`/medicines/${id}`, data),
+  updateMedicine: (id: string, data: FormData) => api.put(`/medicines/${id}`, data, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  }),
   
   deleteMedicine: (id: string) => api.delete(`/medicines/${id}`),
   

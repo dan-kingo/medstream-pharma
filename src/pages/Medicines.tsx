@@ -1,5 +1,5 @@
 import  { useState } from 'react'
-import { Plus, Search, Edit, Trash2, AlertTriangle, Package } from 'lucide-react'
+import { Plus, Search, Edit, Trash2, AlertTriangle, Package, ImagePlus, X } from 'lucide-react'
 import { useApi, useApiMutation } from '../hooks/useApi'
 import { medicineAPI } from '../services/api'
 
@@ -13,6 +13,7 @@ interface Medicine {
   requiresPrescription: boolean
   outOfStock: boolean
   description?: string
+  imageUrl?: string
 }
 
 const Medicines: React.FC = () => {
@@ -36,7 +37,7 @@ const filteredMedicines = medicines.filter(medicine => {
   return matchesSearch && matchesType
 })
 
-  const handleAddMedicine = async (formData: any) => {
+  const handleAddMedicine = async (formData: FormData) => {
     try {
       await medicineAPI.addMedicine(formData)
       setShowAddModal(false)
@@ -46,7 +47,7 @@ const filteredMedicines = medicines.filter(medicine => {
     }
   }
 
-  const handleUpdateMedicine = async (id: string, formData: any) => {
+  const handleUpdateMedicine = async (id: string, formData: FormData) => {
     try {
       await medicineAPI.updateMedicine(id, formData)
       setEditingMedicine(null)
@@ -150,6 +151,15 @@ const filteredMedicines = medicines.filter(medicine => {
         {filteredMedicines.map((medicine) => (
           <div key={medicine._id} className="card">
             <div className="card-body">
+              {medicine.imageUrl && (
+                <div className="mb-3">
+                  <img
+                    src={medicine.imageUrl}
+                    alt={medicine.name}
+                    className="w-full h-40 object-cover rounded-lg border border-gray-100"
+                  />
+                </div>
+              )}
               <div className="flex justify-between items-start mb-4">
                 <div className="flex-1">
                   <h3 className="text-lg font-semibold text-gray-900 mb-1">{medicine.name}</h3>
@@ -273,10 +283,27 @@ const MedicineModal: React.FC<MedicineModalProps> = ({ medicine, onClose, onSave
     requiresPrescription: medicine?.requiresPrescription || false,
     description: medicine?.description || '',
   })
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(medicine?.imageUrl || null)
+  const [removeExistingImage, setRemoveExistingImage] = useState(false)
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    onSave(formData)
+    const data = new FormData()
+    data.append('name', formData.name)
+    data.append('strength', formData.strength)
+    data.append('type', formData.type)
+    data.append('price', String(formData.price))
+    data.append('quantity', String(formData.quantity))
+    data.append('requiresPrescription', String(formData.requiresPrescription))
+    data.append('description', formData.description)
+    if (imageFile) {
+      data.append('image', imageFile)
+    }
+    if (medicine) {
+      data.append('removeImage', String(removeExistingImage))
+    }
+    onSave(data)
   }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -286,6 +313,21 @@ const MedicineModal: React.FC<MedicineModalProps> = ({ medicine, onClose, onSave
       [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : 
                type === 'number' ? parseFloat(value) || 0 : value
     }))
+  }
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setImageFile(file)
+      setImagePreview(URL.createObjectURL(file))
+      setRemoveExistingImage(false)
+    }
+  }
+
+  const handleRemoveImage = () => {
+    setImageFile(null)
+    setImagePreview(null)
+    setRemoveExistingImage(true)
   }
 
   return (
@@ -388,6 +430,53 @@ const MedicineModal: React.FC<MedicineModalProps> = ({ medicine, onClose, onSave
                 value={formData.description}
                 onChange={handleChange}
               />
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="block text-sm font-medium text-gray-700">
+                  Image
+                </label>
+                {medicine && !imagePreview && !imageFile && (
+                  <span className="text-xs text-gray-500">Optional</span>
+                )}
+              </div>
+              <div className="flex flex-wrap items-center gap-3">
+                <label
+                  htmlFor="imageUpload"
+                  className="inline-flex items-center gap-2 px-4 py-2 border border-dashed border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:border-primary-500 hover:text-primary-600 transition-colors cursor-pointer"
+                >
+                  <ImagePlus className="h-4 w-4" />
+                  {imageFile ? 'Change image' : medicine ? 'Choose new image' : 'Upload image'}
+                </label>
+                <input
+                  id="imageUpload"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+
+                {imagePreview && (
+                  <div className="relative">
+                    <img
+                      src={imagePreview}
+                      alt="Selected preview"
+                      className="h-20 w-24 object-cover rounded-md border border-gray-200"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleRemoveImage}
+                      className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-white border border-gray-200 shadow-sm flex items-center justify-center text-gray-500 hover:text-error-600 hover:border-error-200"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                )}
+                {!imagePreview && medicine?.imageUrl && !removeExistingImage && (
+                  <div className="text-xs text-gray-500">Current image will be kept if no new file is selected.</div>
+                )}
+              </div>
             </div>
 
             <div className="flex items-center">
